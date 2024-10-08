@@ -48,7 +48,7 @@ model = dict(
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
     roi_head=dict(
         type='CascadeRoIHead',
-        num_stages=2,
+        num_stages=3,
         stage_loss_weights=[1, 0.5, 0.25],
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
@@ -89,7 +89,23 @@ model = dict(
                     use_sigmoid=False,
                     loss_weight=1.0),
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
-                               loss_weight=1.0))
+                               loss_weight=1.0)),
+            dict(
+                type='Shared2FCBBoxHead',
+                in_channels=256,
+                fc_out_channels=1024,
+                roi_feat_size=7,
+                num_classes=80,
+                bbox_coder=dict(
+                    type='DeltaXYWHBBoxCoder',
+                    target_means=[0., 0., 0., 0.],
+                    target_stds=[0.033, 0.033, 0.067, 0.067]),
+                reg_class_agnostic=True,
+                loss_cls=dict(
+                    type='CrossEntropyLoss',
+                    use_sigmoid=False,
+                    loss_weight=1.0),
+                loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
         ]),
     # model training and testing settings
     train_cfg=dict(
@@ -138,6 +154,22 @@ model = dict(
                     pos_iou_thr=0.6,
                     neg_iou_thr=0.6,
                     min_pos_iou=0.6,
+                    match_low_quality=False,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=3072,
+                    pos_fraction=0.25,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=True),
+                pos_weight=-1,
+                debug=False),
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.7,
+                    neg_iou_thr=0.7,
+                    min_pos_iou=0.7,
                     match_low_quality=False,
                     ignore_iof_thr=-1),
                 sampler=dict(
